@@ -1,0 +1,629 @@
+   <!--  https://github.com/sigalga52-dot/code-box/new/main-->
+   <!-- https://gemini.google.com/share/7f55844f2099?skid=8e67080f-1882-4cd3-834a-b51da9c0eeb1-->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תיבת האוצר של דודה קלרה - חדר בריחה מתמטי</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, #f5f3ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        h1, h2, h3 { font-family: 'Heebo', sans-serif; }
+        
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .pulse-glow { animation: pulseGlow 2s infinite; }
+        @keyframes pulseGlow { 
+            0% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.7); } 
+            70% { box-shadow: 0 0 0 15px rgba(167, 139, 250, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); } 
+        }
+
+        .chest { transition: all 0.5s ease; cursor: pointer; }
+        .chest:hover { transform: scale(1.05) rotate(2deg); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // רכיב להצגת נוסחאות מתמטיות
+        const MathFormula = ({ math }) => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                if (containerRef.current) {
+                    katex.render(math, containerRef.current, {
+                        throwOnError: false,
+                        displayMode: true,
+                    });
+                }
+            }, [math]);
+            return <div ref={containerRef} className="text-xl md:text-2xl my-4 text-gray-800" dir="ltr"></div>;
+        };
+
+        // מאגר המשוואות והנתונים
+        const GAME_DATA = [
+            {
+                roomName: "הספרייה הסודית",
+                codeDigit: "4",
+                stages: [
+                    {
+                        original: {
+                            equation: "\\frac{x+2}{x-4} - \\frac{3}{x^2-16} = 0",
+                            answers: ["-1", "-5"],
+                            hint: "רמז קטן: שימי לב למכנה השני, <span dir='ltr'>x²-16</span> הוא הפרש ריבועים. אפשר לפרק אותו ל- <span dir='ltr'>(x-4)(x+4)</span>!",
+                            solutionSteps: "כדי לפתור נפרק את המכנה: <br/> <span dir='ltr'>(x+2)/(x-4) - 3/((x-4)(x+4)) = 0</span><br/> נכפיל במכנה המשותף <span dir='ltr'>(x-4)(x+4)</span> ונקבל:<br/> <span dir='ltr'>(x+2)(x+4) - 3 = 0</span><br/> <span dir='ltr'>x² + 6x + 8 - 3 = 0</span><br/> <span dir='ltr'>x² + 6x + 5 = 0</span><br/> הפתרונות הם <span dir='ltr'>-1</span> ו- <span dir='ltr'>-5</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{x}{x-5} - \\frac{9}{x+5} = \\frac{50}{x^2-25}",
+                                answers: ["-1"],
+                                hint: "רמז קטן: <span dir='ltr'>x²-25</span> הוא הפרש ריבועים. שווה ל- <span dir='ltr'>(x-5)(x+5)</span>.",
+                                solutionSteps: "מכנה משותף: <span dir='ltr'>(x-5)(x+5)</span>.<br/>נכפיל במכנה המשותף:<br/><span dir='ltr'>x(x+5) - 9(x-5) = 50</span><br/><span dir='ltr'>x² + 5x - 9x + 45 = 50</span><br/><span dir='ltr'>x² - 4x - 5 = 0</span><br/>פתרונות המשוואה הריבועית: <span dir='ltr'>5, -1</span>. נציב ונראה שהפתרון 5 מאפס מכנה ולכן נפסל. התשובה היא <span dir='ltr'>-1</span>."
+                            },
+                            {
+                                equation: "\\frac{4x}{x^2-1} - \\frac{2}{x-1} + \\frac{x}{x+1} = 0",
+                                answers: ["-2"],
+                                hint: "רמז: <span dir='ltr'>x²-1</span> הוא הפרש ריבועים: <span dir='ltr'>(x-1)(x+1)</span>. אל תשכחי לכפול כל מונה במה שחסר לו מהמכנה המשותף.",
+                                solutionSteps: "מכנה משותף: <span dir='ltr'>(x-1)(x+1)</span>.<br/>נכפיל במכנה המשותף:<br/><span dir='ltr'>4x - 2(x+1) + x(x-1) = 0</span><br/><span dir='ltr'>4x - 2x - 2 + x² - x = 0</span><br/><span dir='ltr'>x² + x - 2 = 0</span><br/>פתרונות המשוואה הריבועית הם <span dir='ltr'>-2, 1</span>. הפתרון 1 מאפס את המכנה <span dir='ltr'>(x-1)</span> ולכן נפסל. תשובה: <span dir='ltr'>-2</span>."
+                            }
+                        ]
+                    },
+                    {
+                        original: {
+                            equation: "\\frac{x^2+1}{x^2-9} = \\frac{x+1}{3x-9}",
+                            answers: ["0", "2"],
+                            hint: "רמז: המכנה השמאלי הוא הפרש ריבועים <span dir='ltr'>(x-3)(x+3)</span>. מהמכנה הימני נוציא גורם משותף 3 ונקבל <span dir='ltr'>3(x-3)</span>.",
+                            solutionSteps: "פירוק מכנים: <br/><span dir='ltr'>(x²+1)/(x-3)(x+3) = (x+1)/3(x-3)</span>.<br/> מכנה משותף: <span dir='ltr'>3(x-3)(x+3)</span>. נכפיל בו:<br/> <span dir='ltr'>3(x²+1) = (x+1)(x+3)</span><br/> <span dir='ltr'>3x² + 3 = x² + 4x + 3</span><br/> <span dir='ltr'>2x² - 4x = 0</span><br/> נוציא גורם משותף <span dir='ltr'>2x</span>: <br/><span dir='ltr'>2x(x-2) = 0</span>. <br/>הפתרונות: <span dir='ltr'>0, 2</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{x}{x-4} - \\frac{16}{x^2-16} = \\frac{4}{x+4}",
+                                answers: ["0"],
+                                hint: "רמז: המכנה האמצעי הוא הפרש ריבועים <span dir='ltr'>(x-4)(x+4)</span>.",
+                                solutionSteps: "המכנה המשותף הוא <span dir='ltr'>(x-4)(x+4)</span>.<br/>נכפיל במכנה המשותף:<br/><span dir='ltr'>x(x+4) - 16 = 4(x-4)</span><br/><span dir='ltr'>x² + 4x - 16 = 4x - 16</span><br/><span dir='ltr'>x² = 0</span><br/>הפתרון הוא <span dir='ltr'>0</span>."
+                            },
+                             {
+                                equation: "\\frac{x-1}{x^2-25} + \\frac{2}{x-5} = \\frac{1}{x+5}",
+                                answers: ["-7"],
+                                hint: "רמז: המכנה השמאלי הוא הפרש ריבועים <span dir='ltr'>(x-5)(x+5)</span>.",
+                                solutionSteps: "המכנה המשותף הוא <span dir='ltr'>(x-5)(x+5)</span>.<br/>נכפיל את המונים:<br/><span dir='ltr'>(x-1) + 2(x+5) = 1(x-5)</span><br/><span dir='ltr'>x - 1 + 2x + 10 = x - 5</span><br/><span dir='ltr'>3x + 9 = x - 5</span><br/><span dir='ltr'>2x = -14</span><br/><span dir='ltr'>x = -7</span>."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                roomName: "חדר המראות",
+                codeDigit: "2",
+                stages: [
+                    {
+                        original: {
+                            equation: "\\frac{2x}{x^2-9} - \\frac{1}{x-3} = 1",
+                            answers: ["-2"],
+                            hint: "רמז קטן: שימי לב למכנה הראשון. <span dir='ltr'>x²-9</span> הוא הפרש ריבועים. אפשר לפרק אותו ל- <span dir='ltr'>(x-3)(x+3)</span>!",
+                            solutionSteps: "נפרק את המכנה הראשון:<br/> <span dir='ltr'>2x / ((x-3)(x+3)) - 1 / (x-3) = 1</span><br/>נכפיל במכנה המשותף <span dir='ltr'>(x-3)(x+3)</span> ונקבל:<br/><span dir='ltr'>2x - 1(x+3) = 1(x²-9)</span><br/><span dir='ltr'>2x - x - 3 = x² - 9</span><br/><span dir='ltr'>x - 3 = x² - 9</span><br/><span dir='ltr'>x² - x - 6 = 0</span><br/>הפתרונות של המשוואה הריבועית הם <span dir='ltr'>3</span> ו- <span dir='ltr'>-2</span>. נשים לב ש- <span dir='ltr'>3</span> מאפס את המכנה <span dir='ltr'>(x-3)</span> ולכן נפסל. התשובה היא: <span dir='ltr'>-2</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{3}{x^2-4x+4} + \\frac{1}{x^2-4} = 0",
+                                answers: ["-1"],
+                                hint: "רמז: המכנה השמאלי הוא נוסחת כפל מקוצר <span dir='ltr'>(x-2)²</span>. הימני הוא הפרש ריבועים.",
+                                solutionSteps: "המכנים הם <span dir='ltr'>(x-2)²</span> ו- <span dir='ltr'>(x-2)(x+2)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-2)²(x+2)</span>.<br/>נכפיל:<br/><span dir='ltr'>3(x+2) + 1(x-2) = 0</span><br/><span dir='ltr'>3x + 6 + x - 2 = 0</span><br/><span dir='ltr'>4x + 4 = 0</span><br/><span dir='ltr'>x = -1</span>."
+                            },
+                             {
+                                equation: "\\frac{2}{x^2-6x+9} = \\frac{1}{x^2-9}",
+                                answers: ["-9"],
+                                hint: "רמז: המכנה השמאלי הוא כפל מקוצר <span dir='ltr'>(x-3)²</span>. הימני הוא הפרש ריבועים.",
+                                solutionSteps: "המכנים הם <span dir='ltr'>(x-3)²</span> ו- <span dir='ltr'>(x-3)(x+3)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-3)²(x+3)</span>.<br/>נכפיל:<br/><span dir='ltr'>2(x+3) = 1(x-3)</span><br/><span dir='ltr'>2x + 6 = x - 3</span><br/><span dir='ltr'>x = -9</span>."
+                            }
+                        ]
+                    },
+                    {
+                        original: {
+                            equation: "\\frac{9x}{8x^2-50} + \\frac{5}{2x^2-5x} = \\frac{1}{x}",
+                            answers: ["-10"],
+                            hint: "רמז: הוציאי גורמים משותפים מהמכנים. בראשון הוציאי 2 וקבלי <span dir='ltr'>2(4x²-25)</span>, בשני הוציאי x וקבלי <span dir='ltr'>x(2x-5)</span>. אחר כך השתמשי בהפרש ריבועים במכנה הראשון.",
+                            solutionSteps: "פירוק מכנים: הראשון הוא <span dir='ltr'>2(4x²-25)</span> שזה <span dir='ltr'>2(2x-5)(2x+5)</span>. השני הוא <span dir='ltr'>x(2x-5)</span>.<br/> מכנה משותף: <span dir='ltr'>2x(2x-5)(2x+5)</span>.<br/>נכפיל את כל איבר במה שחסר לו מהמכנה המשותף:<br/> <span dir='ltr'>9x(x) + 5(2)(2x+5) = 1(2)(4x²-25)</span><br/> <span dir='ltr'>9x² + 20x + 50 = 8x² - 50</span><br/> <span dir='ltr'>x² + 20x + 100 = 0</span><br/> נשתמש בנוסחת כפל מקוצר ונמצא ש- <span dir='ltr'>(x+10)² = 0</span>. התשובה היא <span dir='ltr'>-10</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{x}{2x^2-8} - \\frac{1}{x^2+2x} = \\frac{1}{2x}",
+                                answers: ["4"],
+                                hint: "רמז: הוציאי גורמים משותפים (2 מהמכנה הראשון, x מהשני) ופרקי את ההפרש ריבועים <span dir='ltr'>x²-4</span>.",
+                                solutionSteps: "פירוק מכנים: <span dir='ltr'>2(x-2)(x+2)</span>, <span dir='ltr'>x(x+2)</span>, <span dir='ltr'>2x</span>.<br/>מכנה משותף: <span dir='ltr'>2x(x-2)(x+2)</span>.<br/><span dir='ltr'>x(x) - 2(x-2) = (x-2)(x+2)</span><br/><span dir='ltr'>x² - 2x + 4 = x² - 4</span><br/><span dir='ltr'>-2x = -8</span><br/><span dir='ltr'>x = 4</span>."
+                            },
+                            {
+                                equation: "\\frac{2}{x^2+10x+25} = \\frac{1}{x^2-25}",
+                                answers: ["15"],
+                                hint: "רמז: השמאלי הוא כפל מקוצר <span dir='ltr'>(x+5)²</span>. הימני הוא הפרש ריבועים.",
+                                solutionSteps: "המכנים הם <span dir='ltr'>(x+5)²</span> ו- <span dir='ltr'>(x-5)(x+5)</span>.<br/>מכנה משותף: <span dir='ltr'>(x+5)²(x-5)</span>.<br/><span dir='ltr'>2(x-5) = 1(x+5)</span><br/><span dir='ltr'>2x - 10 = x + 5</span><br/><span dir='ltr'>x = 15</span>."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                roomName: "מעבדת השיקויים",
+                codeDigit: "7",
+                stages: [
+                    {
+                        original: {
+                            equation: "\\frac{2x-3}{x^2-2x} - \\frac{3}{2x+4} = \\frac{2}{x^2-4}",
+                            answers: ["-6"],
+                            hint: "רמז: מהמכנה השמאלי הוציאי x גורם משותף. מהאמצעי 2. הימני הוא הפרש ריבועים.",
+                            solutionSteps: "המכנים מתפרקים ל: <span dir='ltr'>x(x-2)</span>, <span dir='ltr'>2(x+2)</span>, <span dir='ltr'>(x-2)(x+2)</span>.<br/>מכנה משותף: <span dir='ltr'>2x(x-2)(x+2)</span>.<br/>נכפיל את המונים במה שחסר:<br/><span dir='ltr'>(2x-3)(2)(x+2) - 3(x)(x-2) = 2(2x)</span><br/><span dir='ltr'>(4x-6)(x+2) - 3x² + 6x = 4x</span><br/><span dir='ltr'>4x² + 8x - 6x - 12 - 3x² + 6x = 4x</span><br/><span dir='ltr'>x² + 8x - 12 = 4x</span><br/><span dir='ltr'>x² + 4x - 12 = 0</span><br/>הפתרונות הם <span dir='ltr'>2</span>, <span dir='ltr'>-6</span>. מכיוון ש-2 מאפס מכנה, התשובה היא רק <span dir='ltr'>-6</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{3}{x^2-10x+25} = \\frac{2}{x^2-25}",
+                                answers: ["-25"],
+                                hint: "רמז: המכנה השמאלי הוא נוסחת כפל מקוצר של הפרש בריבוע <span dir='ltr'>(x-5)²</span>. הימני הוא הפרש ריבועים.",
+                                solutionSteps: "המכנים הם <span dir='ltr'>(x-5)²</span> ו- <span dir='ltr'>(x-5)(x+5)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-5)²(x+5)</span>.<br/><span dir='ltr'>3(x+5) = 2(x-5)</span><br/><span dir='ltr'>3x + 15 = 2x - 10</span><br/><span dir='ltr'>x = -25</span>."
+                            },
+                             {
+                                equation: "\\frac{x}{x^2-16} - \\frac{1}{x-4} = \\frac{-1}{2x+8}",
+                                answers: ["12"],
+                                hint: "רמז: המכנה השמאלי הוא הפרש ריבועים. מהימני אפשר להוציא גורם משותף 2.",
+                                solutionSteps: "המכנים מתפרקים ל: <span dir='ltr'>(x-4)(x+4)</span>, <span dir='ltr'>(x-4)</span>, <span dir='ltr'>2(x+4)</span>.<br/>מכנה משותף: <span dir='ltr'>2(x-4)(x+4)</span>.<br/><span dir='ltr'>x(2) - 1(2)(x+4) = -1(x-4)</span><br/><span dir='ltr'>2x - 2x - 8 = -x + 4</span><br/><span dir='ltr'>-8 = -x + 4</span><br/><span dir='ltr'>x = 12</span>."
+                            }
+                        ]
+                    },
+                    {
+                        original: {
+                            equation: "\\frac{2x+9}{x^2-6x+9} = \\frac{x}{2x-6}",
+                            answers: ["9", "-2"],
+                            hint: "רמז: המכנה השמאלי הוא נוסחת כפל מקוצר! <span dir='ltr'>(x-3)²</span>. במכנה הימני הוציאי גורם משותף 2.",
+                            solutionSteps: "פירוק מכנים: השמאלי <span dir='ltr'>(x-3)²</span> והימני <span dir='ltr'>2(x-3)</span>.<br/>מכנה משותף: <span dir='ltr'>2(x-3)²</span>.<br/>נכפיל במכנה המשותף:<br/><span dir='ltr'>2(2x+9) = x(x-3)</span><br/><span dir='ltr'>4x + 18 = x² - 3x</span><br/><span dir='ltr'>x² - 7x - 18 = 0</span><br/>פתרונות המשוואה הריבועית: <span dir='ltr'>9, -2</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{2x}{x^2-9} + \\frac{1}{x+3} = \\frac{5}{3x-9}",
+                                answers: ["6"],
+                                hint: "רמז: המכנה השמאלי הוא הפרש ריבועים, מהימני הוציאי גורם משותף 3.",
+                                solutionSteps: "מכנים: <span dir='ltr'>(x-3)(x+3)</span>, <span dir='ltr'>(x+3)</span>, <span dir='ltr'>3(x-3)</span>.<br/>מכנה משותף: <span dir='ltr'>3(x-3)(x+3)</span>.<br/><span dir='ltr'>2x(3) + 1(3)(x-3) = 5(x+3)</span><br/><span dir='ltr'>6x + 3x - 9 = 5x + 15</span><br/><span dir='ltr'>9x - 9 = 5x + 15</span><br/><span dir='ltr'>4x = 24</span><br/><span dir='ltr'>x = 6</span>."
+                            },
+                             {
+                                equation: "\\frac{x+2}{x^2-25} = \\frac{1}{2x-10}",
+                                answers: ["1"],
+                                hint: "רמז: המכנה השמאלי הוא הפרש ריבועים. מהימני הוציאי 2.",
+                                solutionSteps: "מכנים: <span dir='ltr'>(x-5)(x+5)</span> ו- <span dir='ltr'>2(x-5)</span>.<br/>מכנה משותף: <span dir='ltr'>2(x-5)(x+5)</span>.<br/><span dir='ltr'>(x+2)(2) = 1(x+5)</span><br/><span dir='ltr'>2x + 4 = x + 5</span><br/><span dir='ltr'>x = 1</span>."
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                roomName: "עליית הגג השעונה",
+                codeDigit: "8",
+                stages: [
+                    {
+                        original: {
+                            equation: "\\frac{8}{x^2+12x+36} - \\frac{x-2}{x^2-36} = \\frac{1}{x+6}",
+                            answers: ["0", "2"],
+                            hint: "רמז: המכנה הראשון הוא כפל מקוצר <span dir='ltr'>(x+6)²</span>. השני הוא הפרש ריבועים <span dir='ltr'>(x-6)(x+6)</span>.",
+                            solutionSteps: "מכנים: הראשון הוא <span dir='ltr'>(x+6)²</span>, השני <span dir='ltr'>(x-6)(x+6)</span>, השלישי <span dir='ltr'>(x+6)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-6)(x+6)²</span>.<br/>נכפיל את המונים במה שחסר להם:<br/><span dir='ltr'>8(x-6) - (x-2)(x+6) = 1(x-6)(x+6)</span><br/><span dir='ltr'>8x - 48 - (x² + 4x - 12) = x² - 36</span><br/><span dir='ltr'>8x - 48 - x² - 4x + 12 = x² - 36</span><br/>מסדרים את המשוואה ורואים: <span dir='ltr'>-x² + 4x - 36 = x² - 36</span>.<br/>נעביר אגפים: <span dir='ltr'>2x² - 4x = 0</span>.<br/>נוציא גורם משותף: <span dir='ltr'>2x(x-2) = 0</span>.<br/>תשובות: <span dir='ltr'>0</span> ו- <span dir='ltr'>2</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{x}{x^2-1} - \\frac{2}{x-1} = \\frac{-5}{2x+2}",
+                                answers: ["3"],
+                                hint: "רמז: המכנה השמאלי הוא הפרש ריבועים. בימני הוציאי 2 כגורם משותף.",
+                                solutionSteps: "מכנים: <span dir='ltr'>(x-1)(x+1)</span>, <span dir='ltr'>(x-1)</span>, <span dir='ltr'>2(x+1)</span>.<br/>מכנה משותף: <span dir='ltr'>2(x-1)(x+1)</span>.<br/><span dir='ltr'>x(2) - 2(2)(x+1) = -5(x-1)</span><br/><span dir='ltr'>2x - 4x - 4 = -5x + 5</span><br/><span dir='ltr'>-2x - 4 = -5x + 5</span><br/><span dir='ltr'>3x = 9</span><br/><span dir='ltr'>x = 3</span>."
+                            },
+                             {
+                                equation: "\\frac{2}{x^2+8x+16} - \\frac{1}{x^2-16} = 0",
+                                answers: ["12"],
+                                hint: "רמז: השמאלי הוא כפל מקוצר <span dir='ltr'>(x+4)²</span>, והימני הוא הפרש ריבועים.",
+                                solutionSteps: "מכנים: <span dir='ltr'>(x+4)²</span> ו- <span dir='ltr'>(x-4)(x+4)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-4)(x+4)²</span>.<br/><span dir='ltr'>2(x-4) - 1(x+4) = 0</span><br/><span dir='ltr'>2x - 8 - x - 4 = 0</span><br/><span dir='ltr'>x - 12 = 0</span><br/><span dir='ltr'>x = 12</span>."
+                            }
+                        ]
+                    },
+                    {
+                        original: {
+                            equation: "\\frac{5-x}{x^2+2x+1} + \\frac{2}{x^2-1} = \\frac{1}{x-1}",
+                            answers: ["2"],
+                            hint: "רמז: המכנה הראשון הוא נוסחת כפל מקוצר <span dir='ltr'>(x+1)²</span>. השני הוא הפרש ריבועים.",
+                            solutionSteps: "מכנים: <span dir='ltr'>(x+1)²</span>, <span dir='ltr'>(x-1)(x+1)</span>, <span dir='ltr'>(x-1)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-1)(x+1)²</span>.<br/><span dir='ltr'>(5-x)(x-1) + 2(x+1) = 1(x+1)²</span><br/><span dir='ltr'>5x - 5 - x² + x + 2x + 2 = x² + 2x + 1</span><br/><span dir='ltr'>-x² + 8x - 3 = x² + 2x + 1</span><br/><span dir='ltr'>2x² - 6x + 4 = 0</span><br/>נחלק ב-2: <span dir='ltr'>x² - 3x + 2 = 0</span>.<br/>הפתרונות של המשוואה הריבועית: <span dir='ltr'>1</span> ו- <span dir='ltr'>2</span>. היות ו-1 מאפס מכנה, התשובה היא רק <span dir='ltr'>2</span>."
+                        },
+                        substitutes: [
+                            {
+                                equation: "\\frac{x}{x^2-36} = \\frac{1}{3x-18}",
+                                answers: ["3"],
+                                hint: "רמז: השמאלי הפרש ריבועים, בימני להוציא גורם משותף 3.",
+                                solutionSteps: "מכנים: <span dir='ltr'>(x-6)(x+6)</span> ו- <span dir='ltr'>3(x-6)</span>.<br/>מכנה משותף: <span dir='ltr'>3(x-6)(x+6)</span>.<br/><span dir='ltr'>x(3) = 1(x+6)</span><br/><span dir='ltr'>3x = x + 6</span><br/><span dir='ltr'>2x = 6</span><br/><span dir='ltr'>x = 3</span>."
+                            },
+                             {
+                                equation: "\\frac{3}{x^2-4x+4} = \\frac{2}{x^2-4}",
+                                answers: ["-10"],
+                                hint: "רמז: המכנה השמאלי הוא כפל מקוצר של הפרש בריבוע. הימני הפרש ריבועים.",
+                                solutionSteps: "מכנים: <span dir='ltr'>(x-2)²</span> ו- <span dir='ltr'>(x-2)(x+2)</span>.<br/>מכנה משותף: <span dir='ltr'>(x-2)²(x+2)</span>.<br/><span dir='ltr'>3(x+2) = 2(x-2)</span><br/><span dir='ltr'>3x + 6 = 2x - 4</span><br/><span dir='ltr'>x = -10</span>."
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const App = () => {
+            const [step, setStep] = useState('welcome'); // welcome, playing, room_complete, final
+            const [playerName, setPlayerName] = useState('');
+            const [nameInput, setNameInput] = useState('');
+            
+            const [currentRoomIdx, setCurrentRoomIdx] = useState(0);
+            const [currentStageIdx, setCurrentStageIdx] = useState(0);
+            
+            const [userAnswer, setUserAnswer] = useState('');
+            const [mistakes, setMistakes] = useState(0);
+            const [substituteIndex, setSubstituteIndex] = useState(-1);
+            const [viewingSolution, setViewingSolution] = useState(false);
+            const [message, setMessage] = useState({ text: '', type: '', htmlText: '' });
+            
+            const [collectedDigits, setCollectedDigits] = useState([]);
+
+            const startGame = (e) => {
+                e.preventDefault();
+                if(nameInput.trim()) {
+                    setPlayerName(nameInput.trim());
+                    setStep('playing');
+                }
+            };
+
+            const normalizeAnswer = (str) => {
+                // המרת שברים פשוטים לעשרוניים לטובת בדיקה גמישה במידת הצורך
+                const parts = str.split(/[\s,]+/).filter(Boolean).map(s => {
+                    let val = s.trim().replace(/\s+/g, '');
+                    // במידה והוקלד מינוס בסוף בגלל כיוון עברית, נעביר אותו להתחלה
+                    if (val.endsWith('-')) {
+                        val = '-' + val.slice(0, -1);
+                    }
+                    return val;
+                });
+                return parts.sort();
+            };
+
+            const checkAnswer = () => {
+                if(!userAnswer.trim()) return;
+
+                const roomData = GAME_DATA[currentRoomIdx];
+                const stageData = roomData.stages[currentStageIdx];
+                const activeEq = substituteIndex === -1 ? stageData.original : stageData.substitutes[substituteIndex];
+                
+                const userArr = normalizeAnswer(userAnswer);
+                const correctArr = [...activeEq.answers].sort();
+                
+                const isCorrect = JSON.stringify(userArr) === JSON.stringify(correctArr);
+
+                if (isCorrect) {
+                    handleSuccess();
+                } else {
+                    handleMistake();
+                }
+            };
+
+            const handleSuccess = () => {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                setMessage({ text: `כל הכבוד ${playerName}! תשובה נכונה.`, type: 'success', htmlText: '' });
+                
+                setTimeout(() => {
+                    setMessage({ text: '', type: '', htmlText: '' });
+                    setUserAnswer('');
+                    setMistakes(0);
+                    setSubstituteIndex(-1);
+                    setViewingSolution(false);
+                    
+                    if (currentStageIdx === 0) {
+                        setCurrentStageIdx(1); // מעבר למשוואה הבאה באותו חדר
+                    } else {
+                        // חדר הושלם!
+                        const roomData = GAME_DATA[currentRoomIdx];
+                        setCollectedDigits(prev => [...prev, roomData.codeDigit]);
+                        setStep('room_complete');
+                    }
+                }, 1500);
+            };
+
+            const handleMistake = () => {
+                const newMistakes = mistakes + 1;
+                setMistakes(newMistakes);
+                
+                const roomData = GAME_DATA[currentRoomIdx];
+                const stageData = roomData.stages[currentStageIdx];
+                const activeEq = substituteIndex === -1 ? stageData.original : stageData.substitutes[substituteIndex];
+                
+                if (newMistakes === 1) {
+                    setMessage({ text: '', htmlText: `לא בדיוק... ${activeEq.hint}`, type: 'warning', showSolutionOption: false });
+                } else if (newMistakes >= 2) {
+                    setMessage({ 
+                        text: `התשובה עדיין לא נכונה. אם תרצי, אוכל להראות לך את הדרך לפתרון, אבל אז תצטרכי לפתור משוואה חלופית כדי לקבל את הקוד.`, 
+                        type: 'error', 
+                        htmlText: '',
+                        showSolutionOption: true
+                    });
+                }
+            };
+
+            const showSolutionAction = () => {
+                setViewingSolution(true);
+                setMessage({ text: '', type: '', htmlText: '', showSolutionOption: false });
+            };
+            
+            const tryAgainAction = () => {
+                setUserAnswer('');
+                setMessage({ text: '', type: '', htmlText: '', showSolutionOption: false });
+            };
+
+            const acceptSubstitute = () => {
+                const roomData = GAME_DATA[currentRoomIdx];
+                const stageData = roomData.stages[currentStageIdx];
+                
+                if (substituteIndex + 1 < stageData.substitutes.length) {
+                    setSubstituteIndex(prev => prev + 1);
+                    setViewingSolution(false);
+                    setMistakes(0);
+                    setUserAnswer('');
+                    setMessage({ text: 'הנה המשוואה החלופית שלך. בהצלחה!', type: 'info', htmlText: '', showSolutionOption: false });
+                } else {
+                    setViewingSolution(false);
+                    setMistakes(0);
+                    setUserAnswer('');
+                    setMessage({ text: 'נגמרו המשוואות החלופיות לשלב זה. נסי שוב, אני מאמינה בך!', type: 'info', htmlText: '', showSolutionOption: false });
+                }
+            };
+
+            const nextRoom = () => {
+                if (currentRoomIdx + 1 < GAME_DATA.length) {
+                    setCurrentRoomIdx(currentRoomIdx + 1);
+                    setCurrentStageIdx(0);
+                    setStep('playing');
+                } else {
+                    setStep('final');
+                }
+            };
+
+            if (step === 'welcome') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white rounded-3xl shadow-xl max-w-2xl w-full p-8 md:p-12 text-center border-t-8 border-purple-500 fade-in">
+                            <div className="text-6xl mb-6">🗝️ 📜</div>
+                            <h1 className="text-3xl md:text-4xl font-extrabold text-purple-900 mb-4">
+                                סודה של דודה קלרה
+                            </h1>
+                            <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                                היי! דודה קלרה, המתמטיקאית המפורסמת של המשפחה, השאירה עבורך בצוואתה תיבת עץ עתיקה ונעולה.
+                                על התיבה יש מנעול עם 4 ספרות. כדי למצוא את הקוד, תצטרכי לעבור בין 4 חדרים סודיים ביומן שלה, ולפתור שתי משוואות בכל חדר.
+                                <br/><br/>
+                                מוכנה לאתגר? מה השם שלך?
+                            </p>
+                            
+                            <form onSubmit={startGame} className="max-w-md mx-auto">
+                                <input 
+                                    type="text" 
+                                    value={nameInput}
+                                    onChange={(e) => setNameInput(e.target.value)}
+                                    placeholder="השם שלך..." 
+                                    className="w-full text-center text-xl p-4 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none mb-6 shadow-sm"
+                                    required
+                                />
+                                <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xl py-4 rounded-xl transition-all transform hover:-translate-y-1 shadow-lg pulse-glow">
+                                    בואי נתחיל!
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (step === 'room_complete') {
+                const roomData = GAME_DATA[currentRoomIdx];
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-10 text-center border-t-8 border-green-500 fade-in">
+                            <div className="text-6xl mb-4">✨ 🧩</div>
+                            <h2 className="text-3xl font-bold text-gray-800 mb-4">חדר הושלם!</h2>
+                            <p className="text-xl text-gray-600 mb-6">
+                                אלופה, {playerName}! פתרת את שתי המשוואות ב{roomData.roomName.replace(/^ה/, '')}.
+                            </p>
+                            <p className="text-xl text-gray-600 mb-6 font-bold">
+                                הנה ספרה נוספת לקופסת הקוד המסתורית של דודה קלרה.
+                            </p>
+                            <div className="bg-gray-100 p-6 rounded-2xl mb-8">
+                                <p className="text-gray-500 text-sm mb-2">הספרה שקיבלת:</p>
+                                <div className="text-6xl font-black text-purple-600">{roomData.codeDigit}</div>
+                            </div>
+                            <button onClick={nextRoom} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold text-xl py-4 rounded-xl transition-all shadow-md">
+                                {currentRoomIdx + 1 < GAME_DATA.length ? 'לחדר הבא' : 'לפתיחת התיבה!'}
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (step === 'final') {
+                return (
+                    <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="bg-gradient-to-br from-yellow-50 to-orange-100 rounded-3xl shadow-2xl max-w-2xl w-full p-12 text-center fade-in border-4 border-yellow-400">
+                            <h1 className="text-4xl font-black text-yellow-800 mb-6">התיבה נפתחה!</h1>
+                            <div className="text-8xl mb-8 chest">🏴‍☠️ 👑</div>
+                            <p className="text-xl text-gray-800 mb-6 leading-relaxed">
+                                מדהים {playerName}! אספת את כל הספרות בסדר הנכון: 
+                            </p>
+                            <div className="flex justify-center gap-4 mb-8" dir="ltr">
+                                {collectedDigits.map((digit, i) => (
+                                    <div key={i} className="w-16 h-20 bg-white border-2 border-yellow-500 rounded-lg flex items-center justify-center text-4xl font-bold shadow-inner">
+                                        {digit}
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-lg text-gray-700 bg-white/60 p-6 rounded-xl font-medium">
+                                המנעול נפתח בנקישה, ובפנים חיכה לך מכתב מזהב שכתוב עליו:<br/><br/>
+                                "ידעתי שתצליחי, {playerName}. המתמטיקה היא מפתח לכל הדלתות בעולם. האוצר האמיתי הוא היכולת שלך לא לוותר מול קושי. באהבה, דודה קלרה."
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            const roomData = GAME_DATA[currentRoomIdx];
+            const stageData = roomData.stages[currentStageIdx];
+            const activeEq = substituteIndex === -1 ? stageData.original : stageData.substitutes[substituteIndex];
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center">
+                    
+                    {/* Header: Progress & Stats */}
+                    <div className="w-full max-w-4xl flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-xl font-bold text-purple-600">
+                                {currentRoomIdx + 1}/4
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-gray-800 text-lg">{roomData.roomName}</h2>
+                                <p className="text-sm text-gray-500">שלב {currentStageIdx + 1} מתוך 2</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2" dir="ltr">
+                            {collectedDigits.map((d, i) => (
+                                <div key={i} className="w-10 h-10 bg-gray-800 text-yellow-400 font-bold rounded flex items-center justify-center shadow-inner text-lg">
+                                    {d}
+                                </div>
+                            ))}
+                            {[...Array(4 - collectedDigits.length)].map((_, i) => (
+                                <div key={i+4} className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center shadow-inner opacity-50">
+                                    ?
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="w-full max-w-3xl bg-white rounded-3xl shadow-lg overflow-hidden fade-in relative">
+                        
+                        {/* Decorative Top Bar */}
+                        <div className="h-3 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500"></div>
+                        
+                        <div className="p-8 md:p-12">
+                            
+                            {/* Solution Viewing Mode */}
+                            {viewingSolution ? (
+                                <div className="fade-in">
+                                    <h3 className="text-2xl font-bold text-purple-800 mb-4">המשוואה:</h3>
+                                    <div className="bg-blue-50 py-4 px-4 rounded-xl border border-blue-100 shadow-inner mb-6 flex justify-center">
+                                        <MathFormula math={activeEq.equation} />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-purple-800 mb-4">הדרך לפתרון:</h3>
+                                    <div className="bg-purple-50 p-6 rounded-xl border border-purple-100 mb-6 text-lg text-gray-800 leading-loose" dir="rtl">
+                                        <p dangerouslySetInnerHTML={{ __html: activeEq.solutionSteps }}></p>
+                                    </div>
+                                    <button 
+                                        onClick={acceptSubstitute}
+                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl shadow-md transition-all"
+                                    >
+                                        הבנתי! תן לי משוואה חלופית
+                                    </button>
+                                </div>
+                            ) : (
+                                /* Normal Equation Solving Mode */
+                                <div className="text-center fade-in">
+                                    <p className="text-gray-500 mb-6 font-medium">
+                                        {substituteIndex > -1 ? 
+                                            'משוואה חלופית: פתרי כדי להמשיך!' : 
+                                            `קדימה ${playerName}, פתרי את המשוואה הבאה:`}
+                                    </p>
+                                    
+                                    <div className="bg-blue-50 py-8 px-4 rounded-2xl border border-blue-100 shadow-inner mb-8 flex justify-center">
+                                        <MathFormula math={activeEq.equation} />
+                                    </div>
+
+                                    {/* Message Display (Hints, Errors, Success) */}
+                                    {(message.text || message.htmlText) && (
+                                        <div className={`p-4 rounded-xl mb-6 text-right text-sm md:text-base ${
+                                            message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                            message.type === 'warning' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
+                                            message.type === 'info' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                            'bg-red-100 text-red-800 border border-red-200'
+                                        }`}>
+                                            {message.htmlText ? <span dangerouslySetInnerHTML={{ __html: message.htmlText }} /> : message.text}
+                                            
+                                            {message.showSolutionOption && (
+                                                <div className="mt-4 flex gap-3 flex-wrap">
+                                                    <button 
+                                                        onClick={showSolutionAction}
+                                                        className="bg-white text-red-600 border border-red-200 font-bold py-2 px-4 rounded-lg hover:bg-red-50 text-sm"
+                                                    >
+                                                        אני רוצה לראות את הפתרון
+                                                    </button>
+                                                    <button 
+                                                        onClick={tryAgainAction}
+                                                        className="bg-white text-gray-700 border border-gray-300 font-bold py-2 px-4 rounded-lg hover:bg-gray-50 text-sm"
+                                                    >
+                                                        אני רוצה לנסות שוב
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="mb-4 text-right">
+                                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                                            הכניסי פתרון (אם יש יותר מפתרון אחד, הפרידי ברווח או לחצי פעמיים על כפתור אנטר. למשל: <span dir="ltr" className="inline-block">-2 &nbsp; 3</span>):
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            dir="ltr"
+                                            value={userAnswer}
+                                            onChange={(e) => setUserAnswer(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
+                                            className="w-full text-center text-xl p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                                            placeholder="x = ..."
+                                        />
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={checkAnswer}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl py-4 rounded-xl transition-all shadow-md mt-4"
+                                    >
+                                        בדוק תשובה
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
